@@ -4,7 +4,7 @@ class Resource
 
     def initialize(*args)
       super(*args)
-      @aws_client = Aws::Kinesis::Client.new(region: @desired_properties['region'])
+      @aws_client = Aws::Kinesis::Client.new(region: @desired_properties[:region])
     end
   end
 end

@@ -1,5 +1,4 @@
 require 'spec_helper'
-require_relative '../../resource'
 
 describe Resource::Lambda::Function do
 

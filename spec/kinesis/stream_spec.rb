@@ -1,9 +1,6 @@
 require 'spec_helper'
-require_relative '../../resource'
 
-
-
-describe Resource::Lambda::Function do
+describe Resource::Kinesis::Stream do
 
   client = Aws::Kinesis::Client.new(region: 'us-west-2')
 

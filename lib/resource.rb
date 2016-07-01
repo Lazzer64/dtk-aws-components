@@ -57,9 +57,3 @@ class Resource
     diff
   end
 end
-
-# config = JSON.parse(File.read('./spec/fixtures/lambda/current_properties.json'))
-# configNew = JSON.parse(File.read('./spec/fixtures/lambda/desired_properties.json'))
-
-# Resource::Lambda::Function.new(config).converge
-# Resource::Lambda::Function.new(configNew, {current_hash: config}).converge

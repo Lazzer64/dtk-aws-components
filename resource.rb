@@ -2,23 +2,19 @@ require 'aws-sdk'
 require 'json'
 
 class Resource
-  require_relative 'resource/kinesis'
-  require_relative 'resource/lambda'
   require_relative 'resource/diff'
+  require_relative 'resource/lambda'
+  require_relative 'resource/kinesis'
+  require_relative 'resource/properties'
 
-  def initialize
-    @current_properties = nil
-
-    if File.exist?('./desired_properties.json')
-      json = File.read('./desired_properties.json')
-      @desired_properties = JSON.parse(json)
-    else
-      raise 'Missing desired_properties.json'
-    end
+  # Opts can have keys
+  # :current_hash
+  def initialize(desired_hash, opts = {})
+    @desired_properties = Properties.new(self.class, desired_hash)
+    @current_properties = opts[:current_hash] && Properties.new(self.class, opts[:current_hash])
   end
 
   def converge
-    populate_current_properties
     if @current_properties.nil?
       create
     else
@@ -42,27 +38,23 @@ class Resource
   end
 
   def populate_current_properties
-    if File.exist?('./current_properties.json')
-      json = File.read('./current_properties.json')
-      @current_properties = JSON.parse(json)
-    end
+    # TODO 
   end
 
-  def ordered_keys
-    @desired_properties.keys
-  end
-
-  def get_diff(curr, desire)
+  def get_diff(current, desired)
     diff = Resource::Diff.new
 
-    ordered_keys.each do |key|
-      next unless curr[key] != desire[key]
-      diff[key] = desire[key]
+    @desired_properties.keys.each do |key|
+      next unless current[key] != desired[key]
+      diff[key] = desired[key]
     end
 
     diff
   end
 end
 
-obj = Resource::Lambda::Function.new
-obj.converge
+# config = JSON.parse(File.read('./spec/fixtures/lambda/current_properties.json'))
+# configNew = JSON.parse(File.read('./spec/fixtures/lambda/desired_properties.json'))
+
+# Resource::Lambda::Function.new(config).converge
+# Resource::Lambda::Function.new(configNew, {current_hash: config}).converge

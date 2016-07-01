@@ -1,6 +1,15 @@
 class Resource
   class Lambda
     class Function < self
+
+      METADATA = {
+        function_name: [:required],
+        runtime: [],
+        handler: [],
+        role: [],
+        code: []
+      }
+
       private
 
       def create
@@ -49,6 +58,7 @@ class Resource
         end
 
         if diff.key?('code') then update_code
+        end
       end
     end
   end

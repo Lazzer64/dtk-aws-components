@@ -1,21 +1,34 @@
 class Resource
   class Properties < ::Hash
-    def initialize(resource_class, props_hash)
+    def initialize(resource_class, hash)
       @resource_class = resource_class
-      self.merge!(props_hash)
-      raise "Invalid props hash #{props_hash} for resource '#{resource_class}'" unless valid?
+      merge!(convert_to_symbol_form(hash))
     end
 
-    private 
-
-    def valid?
-      # TODO
-      true
+    def valid?(tag)
+      req_properties(tag).find { |key| !has_key?(key) }.nil?
     end
+
+    private
 
     def metadata
-      @resource_class.metadata
+      @resource_class::METADATA
     end
 
+    def req_properties(tag)
+      metadata.keys.select { |key| metadata[key].include?(tag) }
+    end
+
+    def convert_to_symbol_form(obj)
+      if obj.is_a?(Array)
+        obj.map { |el| convert_to_symbol_form(el) }
+      elsif obj.is_a?(Hash)
+        obj.inject({}) do |h, (k, v)|
+          h.merge(k.to_sym => convert_to_symbol_form(v))
+        end
+      else
+        obj
+      end
+    end
   end
 end

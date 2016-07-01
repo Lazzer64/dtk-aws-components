@@ -36,7 +36,7 @@ describe Resource::Lambda::Function do
   end
 
   describe ".converge" do
-    context "When current_properties.json is missing" do
+    context "When current_properties.json is missing and the function HAS NOT been created" do
       it "creates a lambda function from desired_properties.json" do
 
         Resource::Lambda::Function.new(config).converge
@@ -45,20 +45,27 @@ describe Resource::Lambda::Function do
       end
     end
 
+    context "When current_properties.json is missing and the function HAS been created" do
+      it "does nothing" do
+
+        Resource::Lambda::Function.new(config).converge
+        expect(client.get_function(function_name: config['function_name'])).not_to eq(Aws::Lambda::Errors::ResourceConflictException)
+
+      end
+    end
+
     context "When current_properties and desired_properties are given" do
       it "changes the configuration to match desired_properties" do
 
-        func = Resource::Lambda::Function.new(config2, {current_hash: config}).converge
+        Resource::Lambda::Function.new(config2, {current_hash: config}).converge
         resp = client.get_function(function_name: config['function_name'])
         expect(resp.configuration.handler).to eq('server.handler')
 
       end
     end
-
   end
 
   after(:all) do
     client.delete_function(function_name: config['function_name'])
   end
-
 end

@@ -15,11 +15,12 @@ class Resource
   end
 
   def converge
-    if @current_properties.nil?
-      create
-    else
+    if exists?
+      if @current_properties.nil? then populate_current_properties end
       diff = get_diff(@current_properties, @desired_properties)
       process_diff(diff)
+    else
+      create
     end
   end
 
@@ -38,7 +39,11 @@ class Resource
   end
 
   def populate_current_properties
-    # TODO 
+    raise 'Unimplemented'
+  end
+
+  def exists?
+    raise 'Unimplemented'
   end
 
   def get_diff(current, desired)

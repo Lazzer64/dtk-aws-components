@@ -28,9 +28,7 @@ class Resource
       end
 
       def delete
-        @aws_client.delete_function(
-          function_name: @function_name
-        )
+        @aws_client.delete_function(function_name: @function_name)
       end
 
       def update_code
@@ -52,13 +50,39 @@ class Resource
         )
       end
 
+      def exists?
+        begin
+          @aws_client.get_function_configuration(function_name: @desired_properties['function_name'])
+        rescue Aws::Lambda::Errors::ResourceNotFoundException
+          return false
+        end
+        true
+      end
+
+      def populate_current_properties
+        resp = @aws_client.get_function_configuration(function_name: @desired_properties['function_name'])
+        @current_properties = {
+          'function_name' => resp.function_name,
+          'function_arn' => resp.function_arn,
+          'runtime' => resp.runtime,
+          'role' => resp.role,
+          'handler' => resp.handler,
+          'code_size' => resp.code_size,
+          'description' => resp.description,
+          'timeout' => resp.timeout,
+          'memory_size' => resp.memory_size,
+          'last_modified' => resp.last_modified,
+          'code_sha_256' => resp.code_sha_256,
+          'version' => resp.version
+        }
+      end
+
       def process_diff(diff)
         if diff.key?('runtime') || diff.key?('role') || diff.key?('handler') || diff.key?('code')
           update_configuration
         end
 
-        if diff.key?('code') then update_code
-        end
+        if diff.key?('code') then update_code end
       end
     end
   end

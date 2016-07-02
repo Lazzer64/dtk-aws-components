@@ -6,6 +6,7 @@ class Resource
   require_relative 'resource/lambda'
   require_relative 'resource/kinesis'
   require_relative 'resource/properties'
+  require_relative 'resource/exceptions'
 
   # Opts can have keys
   # :current_hash
@@ -27,23 +28,23 @@ class Resource
   private
 
   def create
-    raise 'Unimplemented'
+    raise Resource::Unimplemented
   end
 
   def delete
-    raise 'Unimplemented'
+    raise Resource::Unimplemented
   end
 
   def process_diff
-    raise 'Unimplemented'
+    raise Resource::Unimplemented
   end
 
   def populate_current_properties
-    raise 'Unimplemented'
+    raise Resource::Unimplemented
   end
 
   def exists?
-    raise 'Unimplemented'
+    raise Resource::Unimplemented
   end
 
   def get_diff(current, desired)

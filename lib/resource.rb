@@ -16,6 +16,7 @@ class Resource
     raise MissingProperties if not @desired_properties.valid?(:create)
     raise ResourceAlreadyExists if exists?
     create_resource 
+    output(properties?)
   end
 
   def delete
@@ -32,9 +33,14 @@ class Resource
     diff = get_diff(@current_properties, @desired_properties)
     process_diff(diff)
 
+    output(properties?)
   end
 
   private
+
+  def output(properties)
+    File.new("output.json",  "w+").write(properties?.to_json)
+  end
 
   def exists?
     raise MissingProperties if not @desired_properties.valid?(:key)

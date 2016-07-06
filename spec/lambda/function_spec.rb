@@ -40,21 +40,9 @@ describe Resource::Lambda::Function do
         expect { Resource::Lambda::Function.new(config).create }.to raise_error Resource::ResourceAlreadyExists
       end
     end
-
-    context "Config file is missing a :key value" do
-      it "Throws an error" do
-        expect { Resource::Lambda::Function.new(config_bad).create }.to raise_error Resource::MissingProperties
-      end
-    end
   end
 
   describe "#modify" do
-    context "Config file is missing a :key value" do
-      it "Throws an error" do
-        expect { Resource::Lambda::Function.new(config_bad).modify }.to raise_error Resource::MissingProperties
-      end
-    end
-
     context "All keys are present and the function DOES exist" do
       it "changes the function configuration to match desired properties" do
         Resource::Lambda::Function.new(config).create
@@ -82,13 +70,6 @@ describe Resource::Lambda::Function do
     context "All keys are present and the function DOES NOT exist" do
       it "Throw an error" do
         expect { Resource::Lambda::Function.new(config2).modify }.to raise_error Resource::ResourceDoesNotExist
-      end
-    end
-
-    context "One or more keys are missing" do
-      it "throw an error" do
-        Resource::Lambda::Function.new(config).create
-        expect { Resource::Lambda::Function.new(config_bad).modify }.to raise_error Resource::MissingProperties
       end
     end
   end

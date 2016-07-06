@@ -42,20 +42,9 @@ class Resource
       end
 
       def properties?
-
         resp = @aws_client.describe_stream(stream_name: @desired_properties[:stream_name])
-
-        props = {
-          :stream_name => resp.stream_description.stream_name,
-          :stream_arn => resp.stream_description.stream_arn,
-          :stream_status => resp.stream_description.stream_status,
-          :shards => resp.stream_description.shards,
-          :has_more_shards => resp.stream_description.has_more_shards,
-          :retention_period_hours => resp.stream_description.retention_period_hours,
-          :enhanced_monitoring => resp.stream_description.enhanced_monitoring
-        }
-        return Resource::Properties.new(self.class, props)
-        rescue Aws::Kinesis::Errors::ResourceNotFoundException
+        return Resource::Properties.new(self.class, resp.to_h)
+      rescue Aws::Kinesis::Errors::ResourceNotFoundException
           return nil
       end
     end

@@ -1,6 +1,6 @@
 class Resource
   class Lambda < self
-    require_relative './lambda/function'
+    require_relative 'lambda/function'
 
     def initialize(*args)
       super(*args)

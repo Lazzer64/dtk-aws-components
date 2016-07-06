@@ -41,21 +41,7 @@ class Resource
 
       def properties?
         resp = @aws_client.get_function_configuration(function_name: @desired_properties[:function_name])
-        props = {
-          function_name: resp.function_name,
-          function_arn: resp.function_arn,
-          runtime: resp.runtime,
-          role: resp.role,
-          handler: resp.handler,
-          code_size: resp.code_size,
-          description: resp.description,
-          timeout: resp.timeout,
-          memory_size: resp.memory_size,
-          last_modified: resp.last_modified,
-          code_sha_256: resp.code_sha_256,
-          version: resp.version
-        }
-        return Resource::Properties.new(self.class, props)
+        return Resource::Properties.new(self.class, resp.to_h)
       rescue Aws::Lambda::Errors::ResourceNotFoundException
         return nil
       end

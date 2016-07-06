@@ -1,4 +1,7 @@
 class Resource
   class Unimplemented < ::StandardError; end
-  class Missing_Properties < ::StandardError; end
+  class MissingProperties < ::StandardError; end
+  class ResourceAlreadyExists < ::StandardError; end
+  class ResourceDoesNotExist < ::StandardError; end
+  class ResourceNotFound < ::StandardError; end
 end

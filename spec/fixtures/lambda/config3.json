@@ -1,0 +1,12 @@
+{
+  "region": "us-west-2",
+  "function_name": "anotherTestFunction",
+  "runtime": "nodejs4.3", 
+  "role": "arn:aws:iam::518021689748:role/lambda_basic_execution", 
+  "handler": "index.handler",
+  "code": {
+      "s3_bucket": "aTestS3Bucket",
+      "s3_key": "aTestS3Key",
+      "s3_object_version": "aTestS3ObjectVersion"
+  }
+}

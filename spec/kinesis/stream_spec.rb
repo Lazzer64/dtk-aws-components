@@ -1,14 +1,9 @@
 require 'spec_helper'
 
 describe Resource::Kinesis::Stream do
-
   client = Aws::Kinesis::Client.new(region: 'us-west-2')
 
-  config = {
-    "stream_name"=> "aTestStreamName",
-    "shard_count"=> 1,
-    "region"=> "us-west-2"
-  }
+  config = JSON.parse(File.read('./spec/fixtures/kinesis/config.json'))
 
   # Remove stream if it exists already
   before(:all) do
@@ -18,25 +13,25 @@ describe Resource::Kinesis::Stream do
     end
   end
 
-  describe ".converge" do
-    context "When current_properties.json is missing and the stream HAS NOT been created" do
-      it "creates a kinesis stream from desired_properties" do
-
-        Resource::Kinesis::Stream.new(config).converge
-        expect(client.describe_stream(stream_name: config['stream_name'])).not_to eq(Aws::Kinesis::Errors::ResourceNotFoundException)
-      end
-    end
-
-    context "When current_properties is missing and the function HAS been created" do
-      it "does nothing" do
-
-        Resource::Kinesis::Stream.new(config).converge
-        expect(client.describe_stream(stream_name: config['stream_name'])).not_to eq(Aws::Lambda::Errors::ResourceConflictException)
-      end
-    end
-
-    after(:all) do
+  after(:each) do
+    begin
       client.delete_stream(stream_name: config['stream_name'])
+    rescue Aws::Kinesis::Errors::ResourceNotFoundException
+    end
+  end
+
+  describe '#create' do
+    context 'Resource DOES NOT exist' do
+      it 'creates the resource' do
+        Resource::Kinesis::Stream.new(config).create
+        expect { client.describe_stream(stream_name: config['stream_name']) }.not_to raise_error
+      end
+    end
+    context 'Resource DOES exist' do
+      it 'Throws an error' do
+        Resource::Kinesis::Stream.new(config)
+        expect { Resource::Kinesis::Stream.new(config).create }.to raise_error Resource::ResourceAlreadyExists
+      end
     end
   end
 end

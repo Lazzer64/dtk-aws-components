@@ -1,70 +1,95 @@
 require 'spec_helper'
 
 describe Resource::Lambda::Function do
-
   client = Aws::Lambda::Client.new(region: 'us-west-2')
 
-  config = {
+  config = JSON.parse(File.read('./spec/fixtures/lambda/config1.json'))
+  config2 = JSON.parse(File.read('./spec/fixtures/lambda/config2.json'))
+
+  config_bad = {
     "region" => "us-west-2",
-    "function_name" => "aTestFunction",
-    "runtime" => "nodejs4.3",
-    "role" => "arn:aws:iam::518021689748:role/lambda_basic_execution",
-    "handler" => "index.handler",
-    "code" => {
-      "zip_file" => "./spec/fixtures/lambda/example.zip"
-    }
-  }
-  config2 = {
-    "region" => "us-west-2",
-    "function_name" => "aTestFunction",
-    "runtime" => "nodejs4.3",
-    "role" => "arn:aws:iam::518021689748:role/lambda_basic_execution",
-    "handler" => "server.handler",
-    "code" => {
-      "zip_file" => "./spec/fixtures/lambda/example2.zip"
-    }
+    "runtime" => "nodejs4.3"
   }
 
   # Remove function if it exists already
   before(:all) do
     begin
-      client.get_function(function_name: config['function_name'])
       client.delete_function(function_name: config['function_name'])
     rescue Aws::Lambda::Errors::ResourceNotFoundException
     end
   end
 
-  describe ".converge" do
-    context "When current_properties.json is missing and the function HAS NOT been created" do
-      it "creates a lambda function from desired_properties.json" do
+  after(:each) do
+    begin
+      client.delete_function(function_name: config['function_name'])
+    rescue Aws::Lambda::Errors::ResourceNotFoundException
+    end
+  end
 
-        Resource::Lambda::Function.new(config).converge
-        expect(client.get_function(function_name: config['function_name'])).not_to eq(Aws::Lambda::Errors::ResourceNotFoundException)
-
+  describe '#create' do
+    context "Resource DOES NOT exist" do
+      it "Create the resource" do
+        Resource::Lambda::Function.new(config).create
+        expect { client.get_function(function_name: config['function_name']) }.not_to raise_error
       end
     end
 
-    context "When current_properties.json is missing and the function HAS been created" do
-      it "does nothing" do
-
-        Resource::Lambda::Function.new(config).converge
-        expect(client.get_function(function_name: config['function_name'])).not_to eq(Aws::Lambda::Errors::ResourceConflictException)
-
+    context "Resource DOES exist" do
+      it "Throws an error" do
+        Resource::Lambda::Function.new(config).create 
+        expect { Resource::Lambda::Function.new(config).create }.to raise_error Resource::ResourceAlreadyExists
       end
     end
 
-    context "When current_properties and desired_properties are given" do
-      it "changes the configuration to match desired_properties" do
-
-        Resource::Lambda::Function.new(config2, {current_hash: config}).converge
-        resp = client.get_function(function_name: config['function_name'])
-        expect(resp.configuration.handler).to eq('server.handler')
-
+    context "Config file is missing a :key value" do
+      it "Throws an error" do
+        expect { Resource::Lambda::Function.new(config_bad).create }.to raise_error Resource::MissingProperties
       end
     end
   end
 
-  after(:all) do
-    client.delete_function(function_name: config['function_name'])
+  describe "#modify" do
+    context "Config file is missing a :key value" do
+      it "Throws an error" do
+        expect { Resource::Lambda::Function.new(config_bad).modify }.to raise_error Resource::MissingProperties
+      end
+    end
+
+    context "All keys are present and the function DOES exist" do
+      it "changes the function configuration to match desired properties" do
+        Resource::Lambda::Function.new(config).create
+        Resource::Lambda::Function.new(config2).modify
+        resp = client.get_function(function_name: config['function_name'])
+        expect(resp.configuration.description).to eq(config2['description'])
+        expect(resp.configuration.handler).to eq(config2['handler'])
+      end
+    end
+
+    context "All keys are present and the function DOES exist" do
+      it "changes the function code to match desired properties" do
+        Resource::Lambda::Function.new(config).create
+        code_sha1 = client.get_function(function_name: config['function_name']).configuration.code_sha_256
+
+        config_code_update = {function_name: config['function_name'], region: 'us-west-2', code: {zip_file: './spec/fixtures/lambda/example2.zip'}}
+        Resource::Lambda::Function.new(config_code_update).modify
+
+        code_sha2 = Aws::Lambda::Client.new(region: 'us-west-2').get_function(function_name: config['function_name']).configuration.code_sha_256
+
+        expect(code_sha2).not_to eq code_sha1
+      end
+    end
+
+    context "All keys are present and the function DOES NOT exist" do
+      it "Throw an error" do
+        expect { Resource::Lambda::Function.new(config2).modify }.to raise_error Resource::ResourceDoesNotExist
+      end
+    end
+
+    context "One or more keys are missing" do
+      it "throw an error" do
+        Resource::Lambda::Function.new(config).create
+        expect { Resource::Lambda::Function.new(config_bad).modify }.to raise_error Resource::MissingProperties
+      end
+    end
   end
 end

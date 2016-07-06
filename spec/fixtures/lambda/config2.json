@@ -1,0 +1,11 @@
+{
+  "region": "us-west-2",
+  "function_name": "anotherTestFunction",
+  "runtime": "nodejs4.3",
+  "role": "arn:aws:iam::518021689748:role/lambda_basic_execution",
+  "handler": "server.handler",
+  "description": "I am a description of a lambda function!",
+  "code": {
+      "zip_file": "/home/alex/dtk/spec/fixtures/lambda/example2.zip"
+  }
+}

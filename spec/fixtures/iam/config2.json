@@ -1,0 +1,7 @@
+{
+    "region": "us-west-2",
+    "policy_name": "aTestPolicy",
+    "Effect": "Allow",
+    "Action": "*",
+    "Resource": "*"
+}

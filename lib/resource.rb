@@ -2,6 +2,7 @@ require 'aws-sdk'
 require 'json'
 
 class Resource
+  require_relative 'resource/iam'
   require_relative 'resource/diff'
   require_relative 'resource/lambda'
   require_relative 'resource/kinesis'
@@ -14,7 +15,7 @@ class Resource
 
   def create
     raise MissingProperties if not @desired_properties.valid?(:create)
-    raise ResourceAlreadyExists if exists?
+    raise ResourceAlreadyExists if @desired_properties.valid?(:key) && exists?
     create_resource 
     output(properties?)
   end
@@ -39,7 +40,9 @@ class Resource
   private
 
   def output(properties)
-    File.new("output.json",  "w+").write(properties?.to_json)
+    json = properties.to_json
+    File.open('output.json', 'w') { |file| file.write(json) }
+    json
   end
 
   def exists?
@@ -60,7 +63,7 @@ class Resource
     raise Unimplemented
   end
 
-  def process_diff
+  def process_diff(diff)
     raise Unimplemented
   end
 

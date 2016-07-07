@@ -41,9 +41,9 @@ class Resource
 
       def properties?
         resp = @aws_client.get_function_configuration(function_name: @desired_properties[:function_name])
-        return Resource::Properties.new(self.class, resp.to_h)
+        Resource::Properties.new(self.class, resp.to_h)
       rescue Aws::Lambda::Errors::ResourceNotFoundException
-        return nil
+        nil
       end
 
       def process_diff(diff)

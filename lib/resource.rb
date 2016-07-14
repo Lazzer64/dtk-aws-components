@@ -18,10 +18,12 @@ class Resource
     raise ResourceAlreadyExists if @desired_properties.valid?(:key) && exists?
     create_resource 
     output(properties?)
+    properties?
   end
 
   def delete
     raise MissingProperties if not @desired_properties.valid?(:key)
+    @current_properties = properties?
     delete_resource 
   end
 

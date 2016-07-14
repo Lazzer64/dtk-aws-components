@@ -9,14 +9,10 @@ class Resource
         Resource: [:create, :update_policy]
       }.freeze
 
-      def initialize(*args)
-        super(*args)
-        build_policy_document
-      end
-
       private 
 
       def create_resource
+        build_policy_document
         resp = @aws_client.create_policy(
           policy_name: @desired_properties[:policy_name],
           path: @desired_properties[:path],
@@ -32,10 +28,11 @@ class Resource
         # Delete all versions of the policy
         detach_from_all
         delete_versions
-        @aws_client.delete_policy(policy_arn: @current_properties[:arn])
+        @aws_client.delete_policy(policy_arn: @desired_properties[:arn])
       end
 
       def process_diff(diff)
+        build_policy_document
         # Can only have 5 versions at once
         delete_versions
         @aws_client.list_policy_versions(
@@ -51,7 +48,7 @@ class Resource
 
       def properties?
         resp = @aws_client.get_policy(policy_arn: @desired_properties[:arn])
-        props = Resource::Properties.new(self.class, resp['policy'].to_h)
+        props = Resource::Properties.new(self.class, resp.policy.to_h)
         props[:region] = @desired_properties[:region]
         return props
       rescue Aws::IAM::Errors::ResourceNotFoundException

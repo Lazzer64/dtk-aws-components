@@ -36,7 +36,7 @@ class Resource
       end
 
       def delete_resource
-        @aws_client.delete_function(function_name: @function_name)
+        @aws_client.delete_function(function_name: @desired_properties[:function_name])
       end
 
       def properties?

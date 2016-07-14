@@ -1,5 +1,6 @@
 class Resource
   class IAM < self
+    require_relative 'iam/role'
     require_relative 'iam/policy'
 
     def initialize(*args)

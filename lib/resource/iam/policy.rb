@@ -30,6 +30,7 @@ class Resource
         # Must:
         # TODO Detach from policy from all users, groups, and roles
         # Delete all versions of the policy
+        detach_from_all
         delete_versions
         @aws_client.delete_policy(policy_arn: @current_properties[:arn])
       end
@@ -78,6 +79,10 @@ class Resource
             version_id: version.version_id
           )
         end
+      end
+
+      def detach_from_all
+        # TODO
       end
     end
   end

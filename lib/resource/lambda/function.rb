@@ -1,3 +1,5 @@
+require 'digest'
+
 class Resource
   class Lambda
     class Function < self
@@ -7,14 +9,9 @@ class Resource
         handler: [:create, :update_config],
         role: [:create, :update_config],
         code: [:create, :update_code],
-        function_arn: [],
-        code_size: [],
         description: [:update_config],
         timeout: [:update_config],
         memory_size: [:update_config],
-        last_modified: [],
-        code_sha_256: [],
-        version: [],
         vpc_config: [:update_config]
       }.freeze
 
@@ -39,11 +36,38 @@ class Resource
         @aws_client.delete_function(function_name: @desired_properties[:function_name])
       end
 
-      def properties?
-        resp = @aws_client.get_function_configuration(function_name: @desired_properties[:function_name])
-        Resource::Properties.new(self.class, resp.to_h)
+      def raw_properties
+        @aws_client.get_function_configuration(function_name: @desired_properties[:function_name])
       rescue Aws::Lambda::Errors::ResourceNotFoundException
         nil
+      end
+
+      def parse_properties(raw_props)
+        Resource::Properties.new(self.class, raw_props.to_h)
+      end
+
+      def update_code(code)
+        # TODO code from s3
+        unless code[:zip_file].nil?
+          zip = File.read(code[:zip_file])
+          @aws_client.update_function_code(
+            function_name: @desired_properties[:function_name],
+            zip_file: zip
+          )
+        end
+      end
+
+      def same_code?(code)
+        # TODO code from s3
+        unless code[:zip_file].nil?
+          zip = File.read(code[:zip_file])
+          sha = Digest::SHA256.base64digest(zip) 
+          sha == @current_properties[:code_sha_256]
+        end
+      end
+
+      def format_diff!(diff)
+        diff.delete(:code) if !diff[:code].nil? && same_code?(diff[:code]) 
       end
 
       def process_diff(diff)
@@ -54,14 +78,7 @@ class Resource
               key => val
             )
           end
-
-          if keys(:update_code).include?(key)
-
-            props = val.merge(function_name: @desired_properties[:function_name])
-            props[:zip_file] = File.read(props[:zip_file]) if props.key?(:zip_file)
-
-            @aws_client.update_function_code(props)
-          end
+          update_code(diff[:code]) if keys(:update_code).include?(key)
           next
         end
       end

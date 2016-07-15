@@ -42,7 +42,7 @@ class Resource
       end
 
       def properties?
-        resp = @aws_client.describe_stream(stream_name: @desired_properties[:stream_name])
+        resp = @aws_client.describe_stream(stream_name: @desired_properties[:stream_name]).stream_description
         return Resource::Properties.new(self.class, resp.to_h)
       rescue Aws::Kinesis::Errors::ResourceNotFoundException
           return nil

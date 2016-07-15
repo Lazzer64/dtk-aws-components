@@ -5,6 +5,6 @@
   "role": "arn:aws:iam::518021689748:role/lambda_basic_execution", 
   "handler": "index.handler",
   "code": {
-      "zip_file": "/home/alex/dtk/spec/fixtures/lambda/example.zip"
+      "zip_file": "./spec/fixtures/lambda/example.zip"
   }
 }

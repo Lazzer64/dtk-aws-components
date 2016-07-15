@@ -6,6 +6,6 @@
   "handler": "server.handler",
   "description": "I am a description of a lambda function!",
   "code": {
-      "zip_file": "/home/alex/dtk/spec/fixtures/lambda/example2.zip"
+      "zip_file": "./spec/fixtures/lambda/example2.zip"
   }
 }

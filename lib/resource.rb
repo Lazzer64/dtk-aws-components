@@ -29,9 +29,9 @@ class Resource
 
   def modify
     raise MissingProperties if not @desired_properties.valid?(:key)
-
     @current_properties = properties?
     raise ResourceDoesNotExist if @current_properties == nil
+    @current_properties[:region] = @desired_properties[:region]
 
     diff = get_diff(@current_properties, @desired_properties)
     process_diff(diff)
@@ -40,6 +40,16 @@ class Resource
   end
 
   private
+
+  def get_diff(current, desired)
+    diff = Diff.new
+    @desired_properties.keys.each do |key|
+      next unless current[key] != desired[key]
+      diff[key] = desired[key]
+    end
+    format_diff!(diff)
+    diff
+  end
 
   def output(properties)
     json = properties.to_json
@@ -57,6 +67,23 @@ class Resource
     self.class::METADATA.keys.select { |key| self.class::METADATA[key].include?(tag) }
   end
 
+  def properties?
+    return nil if raw_properties.nil?
+    parse_properties(raw_properties)
+  end
+
+  def parse_properties(raw_props)
+    Resource::Properties.new(self.class, raw_props)
+  end
+
+  def format_diff!(diff)
+    diff
+  end
+
+  def raw_properties
+    raise Unimplemented
+  end
+
   def create_resource
     raise Unimplemented
   end
@@ -67,20 +94,5 @@ class Resource
 
   def process_diff(diff)
     raise Unimplemented
-  end
-
-  def properties?
-    raise Unimplemented
-  end
-
-  def get_diff(current, desired)
-    diff = Diff.new
-
-    @desired_properties.keys.each do |key|
-      next unless current[key] != desired[key]
-      diff[key] = desired[key]
-    end
-
-    diff
   end
 end

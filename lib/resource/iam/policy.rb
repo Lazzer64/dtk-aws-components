@@ -1,3 +1,5 @@
+require 'uri'
+
 class Resource
   class IAM
     class Policy < self
@@ -31,26 +33,37 @@ class Resource
         @aws_client.delete_policy(policy_arn: @desired_properties[:arn])
       end
 
-      def process_diff(diff)
+      def format_diff!(diff)
         build_policy_document
-        # Can only have 5 versions at once
-        delete_versions
-        @aws_client.list_policy_versions(
-          policy_arn: @current_properties[:arn]
-        )
+      end
 
-        resp = @aws_client.create_policy_version(
+      def process_diff(diff)
+        return if diff.empty?
+        @aws_client.create_policy_version(
           policy_arn: @current_properties[:arn],
           set_as_default: true,
           policy_document: @desired_properties[:policy_document]
         )
+        # Can only have 5 versions at once
+        delete_versions
       end
 
-      def properties?
-        resp = @aws_client.get_policy(policy_arn: @desired_properties[:arn])
-        props = Resource::Properties.new(self.class, resp.policy.to_h)
-        props[:region] = @desired_properties[:region]
-        return props
+      def parse_properties(raw_props)
+        document = JSON.parse(URI.unescape(raw_props[:policy_version][:document]))
+        raw_props[:Effect] = document['Statement'][0]['Effect']
+        raw_props[:Action] = document['Statement'][0]['Action']
+        raw_props[:Resource] = document['Statement'][0]['Resource']
+        raw_props.delete(:policy_version)
+        Resource::Properties.new(self.class, raw_props)
+      end
+
+      def raw_properties
+        info = @aws_client.get_policy(policy_arn: @desired_properties[:arn]).policy
+        policy_version = @aws_client.get_policy_version(
+          policy_arn: @desired_properties[:arn], 
+          version_id: info.default_version_id
+        )
+        info.to_h.merge(policy_version.to_h)
       rescue Aws::IAM::Errors::ResourceNotFoundException
         nil
       end
@@ -69,7 +82,7 @@ class Resource
       end
 
       def delete_versions
-        @aws_client.list_policy_versions(policy_arn: @current_properties[:arn]).versions.each do |version| 
+        @aws_client.list_policy_versions(policy_arn: @desired_properties[:arn]).versions.each do |version| 
           next if version.is_default_version
           @aws_client.delete_policy_version(
             policy_arn: @current_properties[:arn],
@@ -84,4 +97,3 @@ class Resource
     end
   end
 end
-

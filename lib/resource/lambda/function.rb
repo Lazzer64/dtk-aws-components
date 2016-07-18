@@ -18,6 +18,20 @@ class Resource
       private
 
       def create_resource
+        @wait_attempts = 100
+        (0...@wait_attempts).each do
+          begin
+            resp = create_function
+          rescue Aws::Lambda::Errors::InvalidParameterValueException
+            sleep(@wait_time)
+            next
+          end
+          return resp
+        end
+        raise Resource::ResourceTookToLong
+      end
+
+      def create_function
         @aws_client.create_function(
           function_name: @desired_properties[:function_name],
           runtime: @desired_properties[:runtime],

@@ -14,6 +14,8 @@ class Resource
 
   def initialize(desired_hash)
     @desired_properties = Properties.new(self.class, desired_hash)
+    @wait_attempts = 20
+    @wait_time = 0.5
   end
 
   def create
@@ -39,13 +41,12 @@ class Resource
     process_diff(diff)
     wait_for_modify
     output(properties?)
+    properties?
   end
 
   private
 
   def wait_for_modify
-    @wait_attempts = 20
-    @wait_time = 0.5
     (0...@wait_attempts).each do
       @current_properties = properties?
       diff = get_diff(@current_properties, @desired_properties)

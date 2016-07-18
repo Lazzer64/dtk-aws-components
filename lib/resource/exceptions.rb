@@ -4,4 +4,5 @@ class Resource
   class ResourceAlreadyExists < ::StandardError; end
   class ResourceDoesNotExist < ::StandardError; end
   class ResourceNotFound < ::StandardError; end
+  class ResourceTookToLong < ::StandardError; end
 end

@@ -35,6 +35,7 @@ class Resource
 
       def format_diff!(diff)
         build_policy_document
+        diff.delete(:policy_document)
       end
 
       def process_diff(diff)

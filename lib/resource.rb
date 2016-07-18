@@ -1,5 +1,8 @@
 require 'aws-sdk'
 require 'json'
+require 'pp'
+
+ROOT = File.expand_path('..')
 
 class Resource
   require_relative 'resource/iam'
@@ -31,15 +34,27 @@ class Resource
     raise MissingProperties if not @desired_properties.valid?(:key)
     @current_properties = properties?
     raise ResourceDoesNotExist if @current_properties == nil
-    @current_properties[:region] = @desired_properties[:region]
 
     diff = get_diff(@current_properties, @desired_properties)
     process_diff(diff)
-
+    wait_for_modify
     output(properties?)
   end
 
   private
+
+  def wait_for_modify
+    @wait_attempts = 20
+    @wait_time = 0.5
+    (0...@wait_attempts).each do
+      @current_properties = properties?
+      diff = get_diff(@current_properties, @desired_properties)
+      return if diff == {}
+      pp 'Waiting on: ' + diff.to_s
+      sleep(@wait_time)
+    end
+    raise Resource::ResourceTookToLong
+  end
 
   def get_diff(current, desired)
     diff = Diff.new
@@ -47,6 +62,7 @@ class Resource
       next unless current[key] != desired[key]
       diff[key] = desired[key]
     end
+    diff.delete(:region)
     format_diff!(diff)
     diff
   end
@@ -68,8 +84,9 @@ class Resource
   end
 
   def properties?
-    return nil if raw_properties.nil?
-    parse_properties(raw_properties)
+    raw_props = raw_properties
+    return nil if raw_props.nil?
+    parse_properties(raw_props)
   end
 
   def parse_properties(raw_props)

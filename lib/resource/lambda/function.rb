@@ -57,17 +57,19 @@ class Resource
         end
       end
 
-      def same_code?(code)
+      def same_code?(code, current)
         # TODO code from s3
+        return false if code.nil?
         unless code[:zip_file].nil?
           zip = File.read(code[:zip_file])
           sha = Digest::SHA256.base64digest(zip) 
-          sha == @current_properties[:code_sha_256]
+          sha == current[:code_sha_256]
         end
       end
 
       def format_diff!(diff)
-        diff.delete(:code) if !diff[:code].nil? && same_code?(diff[:code]) 
+        diff.delete(:code) if same_code?(diff[:code], properties?) 
+        diff
       end
 
       def process_diff(diff)

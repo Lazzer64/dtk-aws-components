@@ -11,6 +11,31 @@ class Resource
 
       private 
 
+      def raw_properties
+        role = @aws_client.get_role(role_name: @desired_properties[:role_name]).role
+        policies = @aws_client.list_attached_role_policies(role_name: @desired_properties[:role_name]).attached_policies
+        props = role.to_h.merge!(policies: policies)
+      rescue Aws::IAM::Errors::NoSuchEntity
+        nil
+      end
+
+      def parse_properties(raw_props)
+        props = raw_props
+        arns = []
+        raw_props[:policies].each do |policy|
+          arns[arns.length] = policy.policy_arn
+        end
+        props[:policies] = arns 
+        Resource::Properties.new(self.class, props)
+      end
+
+      def format_diff!(diff)
+        if @current_properties[:policies].uniq.sort == @desired_properties[:policies].uniq.sort
+          diff.delete(:policies)
+        end
+        diff
+      end
+
       def build_role_policy_document
         @desired_properties[:assume_role_policy_document] = {
           "Version" => "2012-10-17",
@@ -43,15 +68,6 @@ class Resource
             end
           end
         end
-      end
-
-      def properties?
-        resp = @aws_client.get_role(role_name: @desired_properties[:role_name])
-        props = Resource::Properties.new(self.class, resp.role.to_h)
-        props[:region] = @desired_properties[:region]
-        return props
-      rescue Aws::IAM::Errors::NoSuchEntity
-        nil
       end
 
       def detach_policies

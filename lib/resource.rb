@@ -39,7 +39,7 @@ class Resource
 
     diff = get_diff(@current_properties, @desired_properties)
     process_diff(diff)
-    wait_for_modify
+    # wait_for_modify
     output(properties?)
     properties?
   end

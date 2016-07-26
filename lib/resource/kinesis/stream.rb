@@ -25,7 +25,10 @@ class Resource
       end
 
       def delete_resource
-        @aws_client.delete_stream(stream_name: @desired_properties[:stream_name])
+        resp = @aws_client.describe_stream(stream_name: @desired_properties[:stream_name])
+        unless resp.stream_description.stream_status == 'DELETING'
+          @aws_client.delete_stream(stream_name: @desired_properties[:stream_name])
+        end
       end
 
       def process_diff(diff)

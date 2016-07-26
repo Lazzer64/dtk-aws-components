@@ -12,7 +12,8 @@ class Resource
         description: [:update_config],
         timeout: [:update_config],
         memory_size: [:update_config],
-        vpc_config: [:update_config]
+        vpc_config: [:update_config],
+        streams: [:update_triggers]
       }.freeze
 
       private
@@ -51,13 +52,21 @@ class Resource
       end
 
       def raw_properties
-        @aws_client.get_function_configuration(function_name: @desired_properties[:function_name])
+        props = @aws_client.get_function_configuration(function_name: @desired_properties[:function_name]).to_h
+        props[:event_source_mappings] = @aws_client.list_event_source_mappings(function_name: @desired_properties[:function_name]).event_source_mappings
+        props
       rescue Aws::Lambda::Errors::ResourceNotFoundException
         nil
       end
 
       def parse_properties(raw_props)
-        Resource::Properties.new(self.class, raw_props.to_h)
+        arns = []
+        raw_props.delete(:event_source_mappings).each do |event|
+          arn = @aws_client.get_event_source_mapping(uuid: event.uuid).event_source_arn
+          arns[arns.length] = arn
+        end
+        raw_props[:streams] = arns
+        Resource::Properties.new(self.class, raw_props)
       end
 
       def update_code(code)
@@ -86,15 +95,35 @@ class Resource
         diff
       end
 
+      def create_event_source(arn)
+        @aws_client.create_event_source_mapping({
+          event_source_arn: arn,
+          function_name: @desired_properties[:function_name],
+          starting_position: "TRIM_HORIZON",
+        })
+      end
+
+      def update_streams(streams)
+        streams.each do |stream_arn|
+          # TODO wait for stream to be ready
+          @aws_client.create_event_source_mapping(
+            event_source_arn: stream_arn, 
+            function_name: @desired_properties[:function_name], 
+            starting_position: 'TRIM_HORIZON'
+          )        
+        end
+      end
+
       def process_diff(diff)
         diff.each do |key, val|
+          update_streams(val) if keys(:update_triggers).include?(key)
+          update_code(diff[:code]) if keys(:update_code).include?(key)
           if keys(:update_config).include?(key)
             @aws_client.update_function_configuration(
               :function_name => @desired_properties[:function_name],
               key => val
             )
           end
-          update_code(diff[:code]) if keys(:update_code).include?(key)
           next
         end
       end
